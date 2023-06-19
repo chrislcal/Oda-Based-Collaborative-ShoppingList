@@ -322,7 +322,7 @@ const ShoppingList = () => {
       {items.length > 0 ? (
         displayedProducts
       ) : (
-        <Box position="relative" mt="15%">
+        <Box position="relative" pt='15%'>
           <Typography variant="h4" gutterBottom color="rgba(0,0,0,0.2)">
             Ingen varer
           </Typography>

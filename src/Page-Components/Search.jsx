@@ -177,32 +177,26 @@ function Search() {
     </Box>
   )}
   {searchPerformed && (
-  isLoading ? <Typography variant="h4" sx={{ color: "#9398a3" }}>
-            Loading...
-          </Typography> : (
-    products && products.length > 0 ? displayedProduct : (
-      products.length === 0 ? (
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "100%",
-            height: "70vh",
-          }}
-        >
-          <Typography variant="h4" sx={{ color: "#9398a3" }}>
-            Ingen treff...
-          </Typography>
-        </Box>
-      ) : null
-    )
+  products && products.length > 0 ? displayedProduct : (
+    (!isLoading && products.length === 0) ? (
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "100%",
+          height: "70vh",
+        }}
+      >
+        <Typography variant="h4" sx={{ color: "#9398a3" }}>
+          Ingen treff...
+        </Typography>
+      </Box>
+    ) : null
   )
 )}
 
 </Box>
-
-
       <Box
         sx={{
           mb: '80px',
