@@ -9,6 +9,7 @@ body{background-color: #ECF2FF;}
     position: relative;
     width: 100%;
     margin-top: 30%;
+
 }
 
 .search-logo img {
@@ -16,3 +17,46 @@ body{background-color: #ECF2FF;}
     position: relative;
     width: 70%;
 }
+
+
+#product-card {
+    min-width: calc(50% - 5px); 
+    width: 30%
+}
+
+#paper {
+    width: 97%;
+}
+
+#login-container {
+    width: 80%;
+}
+
+#signup-content-container {
+    width: 90vw;
+}
+
+
+@media screen and (min-width: 900px) {
+    #product-card {
+      min-width: calc(22% - 5px); 
+    }
+
+    #paper {
+        width: 50%;
+    }
+
+    #login-container {
+        max-width: 400px;
+    }
+
+    #signup-content-container {
+        max-width: 500px;
+    }
+    
+  }
+
+
+
+
+

@@ -1,3 +1,5 @@
+import '../styles/style.css'
+
 import axios from "axios";
 import { useRef, useState, useEffect } from "react";
 
@@ -11,48 +13,67 @@ import { Pagination, Box, Button, TextField, Typography } from "@mui/material";
 
 
 function Search() {
+
   const searchRef = useRef("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [products, setProducts] = useState("");
+  const [products, setProducts] = useState([]);
   const [lastPageNum, setLastPageNum] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [searchPerformed, setSearchPerformed] = useState(false);
+  const [quantities, setQuantities] = useState({});
 
 
   const getData = async (resetPageIndex = false) => {
     const pageIndex = resetPageIndex ? 1 : currentPage;
+    setIsLoading(true);
     try {
       const response = await axios.get(
         `http://localhost:3000/scrape?q=${searchRef.current.value}&page=${pageIndex}`
       );
-
-      setProducts(response.data[1]);
-      console.log(response.data[1]);
+    
+      setQuantities({});
+      setProducts(response.data[1].length > 0 ? response.data[1] : []);
       setLastPageNum(response.data[0]);
-
+    
       if (resetPageIndex) {
         setCurrentPage(1);
       }
     } catch (error) {
       console.error(error.message);
     }
+    setIsLoading(false);
   };
-
+  
+  
   useEffect(() => {
     getData();
   }, [currentPage, searchRef.current.value]);
 
   let displayedProduct;
   if (products) {
-    displayedProduct = products.map((product, index) => {
-      return (<ProductCard product={product} key={index}/>)
-    })
+    displayedProduct = products.map((product) => {
+      const productId = product.image;
+      return (
+        <ProductCard
+          product={product}
+          key={productId}
+          quantity={quantities[productId] || 1}
+          setQuantity={(newQuantity) => {
+            setQuantities(prevQuantities => {
+              return {...prevQuantities, [productId]: newQuantity };
+            });
+          }}
+        />
+      );
+    });
   }
+
+  
 
   const handleChange = (event, page) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0});
   }
-
   
 
   return (
@@ -75,7 +96,7 @@ function Search() {
         color="primary.contrastText"
         >
         
-
+        <Box  width='600px' display='flex'>
         <TextField
           fullWidth
           InputLabelProps={{
@@ -113,41 +134,54 @@ function Search() {
           />
           
         <Button
-          sx={{ mr: 2, p: 0.85, textAlign: 'center', borderColor: 'rgba(255, 255, 255, 0.6)', color: 'rgba(255, 255, 255, 0.6)'}}
-          variant="outlined"
-          size="medium"
-          onClick={ async () => {
+          sx={{
+             mr: 2, 
+             p: 0.85,
+             textAlign: 'center',
+             borderColor: 'rgba(255, 255, 255, 0.6)',
+             color: 'rgba(255, 255, 255, 0.6)'
+            }}
+
+            variant="outlined"
+            size="medium"
+            onClick={ async () => {
+            setQuantities({});
             await getData(true);
             setSearchPerformed(true);
             window.scrollTo({top: 0});
           }}
           >
           Søk
-
         </Button>
+        </Box>
       </Box>
 
       <Box
-  className="products-container"
-  bgcolor="#ECF2FF"
-  pt="90px"
-  width="calc(100% - 20px)"
-  marginLeft="auto"
-  marginRight="auto"
-  display="flex"
-  alignItems="center"
-  flexWrap="wrap"
-  gap="10px"
-  pb="10px"
->
+        className="products-container"
+        bgcolor="#ECF2FF"
+        pt="90px"
+        width='90%'
+        marginLeft="auto"
+        marginRight="auto"
+        display="flex"
+        alignItems="center"
+        alignContent='center'
+        justifyContent='center'
+        flexWrap="wrap"
+        gap="10px"
+        pb="10px"
+      >
   {!searchPerformed && (
-    <Box className="search-logo">
-      <img src={searchLogo} alt="Search Logo" />
+    <Box className="search-logo" sx={{position: 'relative', margin: '0 auto', top: '200px'}}>
+      <img src={searchLogo} alt="Search Logo" style={{width: '200px'}}/>
     </Box>
   )}
   {searchPerformed && (
+  isLoading ? <Typography variant="h4" sx={{ color: "#9398a3" }}>
+            Loading...
+          </Typography> : (
     products && products.length > 0 ? displayedProduct : (
-      Array.isArray(products) ? (
+      products.length === 0 ? (
         <Box
           sx={{
             display: "flex",
@@ -163,7 +197,9 @@ function Search() {
         </Box>
       ) : null
     )
-  )}
+  )
+)}
+
 </Box>
 
 

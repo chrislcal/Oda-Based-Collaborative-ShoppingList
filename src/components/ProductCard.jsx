@@ -1,3 +1,7 @@
+
+import '../styles/style.css'
+
+//MUI Imports
 import {
   Card,
   CardActionArea,
@@ -13,13 +17,20 @@ import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
-import { addDoc, deleteDoc, doc, getDocs, serverTimestamp } from "firebase/firestore";
-import { useState, useEffect } from "react";
-import { colRef, db } from "../App";
 
-const ProductCard = ({ product }) => {
+//Firebase Imports 
+import { addDoc, deleteDoc, doc, getDocs, serverTimestamp, collection } from "firebase/firestore";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { db } from "../firebaseConfig";
+
+//React Imports
+import { useState, useEffect } from "react";
+
+const ProductCard = ({ product, quantity, setQuantity }) => {
+
+  const [user, setUser] = useState(null);
+  const [colRef, setColRef] = useState(null);
   const [isAdded, setIsAdded] = useState(false);
-  const [quantity, setQuantity] = useState(1);
   const [productId, setProductId] = useState("");
   const [showAlert, setShowAlert] = useState(false);
 
@@ -29,7 +40,26 @@ const ProductCard = ({ product }) => {
     setProductId("");
   }, [product]);
 
-
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const userId = user.uid;
+        setUser(user);
+        const userColRef = collection(db, "users", userId, "products");
+        setColRef(userColRef);
+      } else {
+        setColRef(null);
+        setUser(null);
+      }
+    });
+  
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+  
+  
   //Truncate text to avoid overlapping of elements
   const truncateText = (text, maxLength) => {
     if (text.length > maxLength) {
@@ -38,53 +68,61 @@ const ProductCard = ({ product }) => {
     return text;
   };
 
-//Add product to database 
+
+// Add product to database
 const handleAddToList = async (product) => {
+  if (!colRef) {
+    console.error('User is not logged in or colRef is not set');
+    return;
+  }
+  
+  const querySnapshot = await getDocs(colRef);
+  const products = [];
+  querySnapshot.forEach((doc) => {
+    products.push({ ...doc.data(), id: doc.id });
+  });
+
+  // check if product already exists
+  const alreadyExists = products.some(p => p.image === product.image);
+  if (alreadyExists) {
+    setIsAdded(false);
+    setShowAlert(true); 
+    return;
+  }
+
+  // add the product if it doesn't exist
   try {
-    const querySnapshot = await getDocs(colRef);
-    const products = [];
-    querySnapshot.forEach((doc) => {
-      products.push({ ...doc.data(), id: doc.id });
-    });
-
-    // check if product already exists
-    const alreadyExists = products.some(p => p.image === product.image);
-    if (alreadyExists) {
-      setShowAlert(true);
-      setIsAdded(false);
-      return;
-    }
-
-    const docRef = await addDoc(colRef, {
-      name: product.name,
-      description: product.description,
-      price: product.price,
-      unitPrice: product.unitPrice,
-      image: product.image,
-      createdAt: serverTimestamp(),
-      quantity
-    });
-    const id = docRef.id; 
-    setIsAdded(true); 
-    setProductId(id); 
+    const docRef = await addDoc(colRef, { ...product, timestamp: serverTimestamp() });
+    setProductId(docRef.id);
+    setIsAdded(true);
   } catch (error) {
-    console.error(error.message);
+    console.error("Error adding document: ", error);
   }
 };
 
 
-  //Delete product from database
-  const handleDeleteFromList = async (productId) => {
-    const docRef = doc(db, "Varer", productId);
+
+const handleDeleteFromList = async (productId) => {
+  if (!colRef) {
+    console.error('User is not logged in or colRef is not set');
+    return;
+  }
+
+  
+  if (user) {
+    const docRef = doc(db, "users", user.uid, "products", productId);
     try {
       await deleteDoc(docRef);
       setIsAdded(false); 
     } catch (error) {
       console.error(error.message);
     }
-  };
-  
+  } else {
+    console.error('No user is logged in');
+  }
+};
 
+  
   const handleIncreaseQuantity = () => {
     setQuantity(quantity + 1);
   };
@@ -99,8 +137,10 @@ const handleAddToList = async (product) => {
     const value = event.target.value;
     if (!isNaN(value) && value >= 1) {
       setQuantity(parseInt(value));
+      props.setQuantity(parseInt(value));
     }
   };
+  
 
   //Toggle button from add to remove
   const handleToggle = () => {
@@ -112,6 +152,8 @@ const handleAddToList = async (product) => {
     }
   };
 
+  
+
   return (
     <>
       {showAlert && (
@@ -122,13 +164,12 @@ const handleAddToList = async (product) => {
       )}
       {product && (
         <Card
-          sx={{
-            width: "calc(50% - 5px)",
-            minWidth: "calc(50% - 5px)",
-            height: "330px",
-            position: "relative",
-          }}>
-          <CardActionArea disableRipple>
+        id="product-card"
+        sx={{
+          height: '330px',
+          position: 'relative',
+        }}>
+         
             <CardMedia
               component="img"
               sx={{ maxHeight: "100px", objectFit: "scale-down", mt: "10px" }}
@@ -136,7 +177,14 @@ const handleAddToList = async (product) => {
               alt={product.description}/>
             <CardContent>
               <Typography
-                sx={{lineHeight: 1.2, fontSize: "16px", height: '40px', overflow:'hidden', textOverflow: 'ellipsis' }}
+                sx={{
+                  lineHeight: 1.2,
+                  fontSize: "16px",
+                  height: '40px',
+                  wordWrap: 'break-word', 
+                  overflowWrap: 'break-word',
+
+                }}
                 gutterBottom
                 variant="h6"
                 component="div">
@@ -188,11 +236,16 @@ const handleAddToList = async (product) => {
               >
                 {product.unitPrice}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary"
+              sx={{
+                wordWrap: 'break-word', 
+                overflowWrap: 'break-word',
+              }}
+              >
                 {truncateText(product.description, 30)}
               </Typography>
             </CardContent>
-          </CardActionArea>
+         
 
           <Box
             sx={{
@@ -218,7 +271,7 @@ const handleAddToList = async (product) => {
               size="small"
               type="number"
               inputProps={{ min: "1" }}
-              sx={{ width: "37px", mx: "8px"}}
+              sx={{ width: "52px", mx: "8px"}}
             />
             <IconButton
               onClick={handleIncreaseQuantity}
