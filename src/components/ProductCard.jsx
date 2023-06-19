@@ -83,8 +83,8 @@ const handleAddToList = async (product) => {
   });
 
   // check if product already exists
-  const alreadyExists = products.some(p => p.image === product.image);
-  if (alreadyExists) {
+  const productIndex = products.findIndex(p => p.image === product.image);
+  if (productIndex !== -1) {
     setIsAdded(false);
     setShowAlert(true); 
     return;
@@ -92,13 +92,14 @@ const handleAddToList = async (product) => {
 
   // add the product if it doesn't exist
   try {
-    const docRef = await addDoc(colRef, { ...product, timestamp: serverTimestamp() });
+    const docRef = await addDoc(colRef, { ...product, quantity, timestamp: serverTimestamp() });
     setProductId(docRef.id);
     setIsAdded(true);
   } catch (error) {
     console.error("Error adding document: ", error);
   }
 };
+
 
 
 
