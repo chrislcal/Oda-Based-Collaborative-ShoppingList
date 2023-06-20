@@ -28,7 +28,7 @@ function Search() {
     setIsLoading(true);
     try {
       const response = await axios.get(
-        `http://localhost:3000/scrape?q=${searchRef.current.value}&page=${pageIndex}`
+        `${process.env.REACT_APP_API_URL}/scrape?q=${searchRef.current.value}&page=${pageIndex}`
       );
     
       setQuantities({});

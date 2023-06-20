@@ -1,15 +1,12 @@
-
+const functions = require('firebase-functions');
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const cheerio = require('cheerio');
 
-
 const app = express();
 app.use(express.json());
 app.use(cors());
-
-const PORT = process.env.PORT || 3000;
 
 app.get('/scrape', async (req, res) => {
   
@@ -23,12 +20,10 @@ app.get('/scrape', async (req, res) => {
       const $ = cheerio.load(html);
       const products = [];
 
-      // Getting number of pages from search result
       const lastPageHref = $('.pagination li:nth-last-child(2) a').attr('href');
       const lastPageNum = lastPageHref ? Number(lastPageHref.match(/page=(\d+)/)[1]) : 1;
-     
-      //Iterating over pages and getting data
-        $('.search-results > .col-xs-6').each((i, el) => {
+
+      $('.search-results > .col-xs-6').each((i, el) => {
           const name = $(el).find('.name-main').text().trim();
           const description = $(el).find('.name-extra').text().trim();
           const priceText = $(el).find('.label-price, .undiscounted-price').text().trim(); 
@@ -49,7 +44,4 @@ app.get('/scrape', async (req, res) => {
     }
   });
 
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-    
+exports.app = functions.https.onRequest(app);
