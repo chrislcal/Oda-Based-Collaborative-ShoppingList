@@ -160,11 +160,11 @@ const App = () => {
             }
           />
         </Routes>
-        <BottomNav />
+        {user && <BottomNav />}
       </AuthProvider>
     </ThemeProvider>
   </BrowserRouter>
   );
-};
+};    
 
 export default App;
